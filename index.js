@@ -174,10 +174,18 @@ async function deletePosts(category) {
     const removeElements = document.querySelectorAll(
       'a[href*="allactivity/removecontent"]'
     );
+    const hideElements = document.querySelectorAll(
+      'a[href*="allactivity/visibility"]'
+    );
+    
     for (const el of deleteElements) {
       links.push(el.href);
     }
     for (const el of removeElements) {
+      links.push(el.href);
+    }
+    // hiding photo tags
+    for (const el of hideElements) {
       links.push(el.href);
     }
 
