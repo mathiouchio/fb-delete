@@ -198,43 +198,36 @@ async function deletePosts(category) {
     }
   }
 
-  if (deleteLinks.length === 0) {
+  let counter = 0;
+  const totalPosts = deleteLinks.length;
+
+  if (totalPosts === 0) {
     console.log(`No ${category} content.`);
   } else {
     if (debug) console.log("deleteLinks", deleteLinks);
 
     await asyncForEach(deleteLinks, async (link, index) => {
       results[category].push(link);
-      console.log(`Deleting post number ${index} with link: ${link}`);
+      console.log(`Deleting ${category} number ${index} / ${totalPosts} with link: ${link}`);
       if (!answers.dryRun) {
         // visit them all to delete content
         try {
           await page.goto(link, { waitUntil: "load" });
+          counter += 1;
         } catch (e) {
           throw new Error(e);
         }
       }
     });
   }
+
+  if (totalPosts !== counter) {
+    console.log(errorLog(`Deletion incomplete: ${counter} / ${totalPosts}`));
+  }
 }
 
 async function getMonthLinks(year) {
-  const monthLinks = await page.evaluate(year => {
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ];
-
+  const monthLinks = await page.evaluate((year, months) => {
     const links = [];
     const elements = document.querySelectorAll("a");
     for (let el of elements) {
@@ -246,7 +239,7 @@ async function getMonthLinks(year) {
     }
 
     return links;
-  }, year);
+  }, year, date.months);
 
   return monthLinks;
 }
@@ -258,7 +251,7 @@ async function deleteYear(year, category) {
   const monLinks = await getMonthLinks(year);
 
   for (let mon in monLinks) {
-    if (debug) console.log(`Going to month ${mon} in year ${year}.`);
+    if (debug) console.log(`Looking for posts: month ${date.months[mon]} in year ${year}.`);
     await page.goto(monLinks[mon], { waitUntil: "load" });
     await deletePosts(category);
   }
