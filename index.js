@@ -74,7 +74,7 @@ const storeCategoryLinks = async () => {
 
 const followCategoryLinkByContent = async text => {
   if (debug) console.log("followCategoryLinkByContent", text);
-  await page.goto(navStore[text], { waitUntil: "load" });
+  await page.goto(navStore[text]);
 };
 
 // Giving pop to error log
@@ -104,13 +104,13 @@ const selectOption = async () => {
   const args = answers.visual
     ? {
         headless: false,
-        slowMo: 100
+        slowMo: 200
       }
     : undefined;
 
   browser = await puppeteer.launch(args);
   page = await browser.newPage();
-  page.setDefaultNavigationTimeout(5000);
+  page.setDefaultNavigationTimeout(30000); // deleting a photo can be slow
 
   await page.goto("https://mbasic.facebook.com/", { waitUntil: "load" });
   await page.$eval(
@@ -174,18 +174,18 @@ async function deletePosts(category) {
     const removeElements = document.querySelectorAll(
       'a[href*="allactivity/removecontent"]'
     );
-    const hideElements = document.querySelectorAll(
-      'a[href*="allactivity/visibility"]'
-    );
-    
+    // const hideElements = document.querySelectorAll(
+    //   'a[href*="allactivity/visibility"]'
+    // );
+
+    // hiding photo tags
+    // for (const el of hideElements) {
+    //   if (el.innerText.indexOf("Show") < 0) links.push(el.href);
+    // }
     for (const el of deleteElements) {
       links.push(el.href);
     }
     for (const el of removeElements) {
-      links.push(el.href);
-    }
-    // hiding photo tags
-    for (const el of hideElements) {
       links.push(el.href);
     }
 
@@ -206,11 +206,13 @@ async function deletePosts(category) {
     await asyncForEach(deleteLinks, async (link, index) => {
       results[category].push(link);
       console.log(`Deleting post number ${index} with link: ${link}`);
-      // visit them all to delete content
-      try {
-        await page.goto(link, { waitUntil: "load" });
-      } catch (error) {
-        throw new Error(errorLog("Can't delete."));
+      if (!answers.dryRun) {
+        // visit them all to delete content
+        try {
+          await page.goto(link, { waitUntil: "load" });
+        } catch (e) {
+          throw new Error(e);
+        }
       }
     });
   }
